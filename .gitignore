@@ -1,0 +1,87 @@
+# Python virtual environments
+venv/
+env/
+.env/
+.venv/
+ENV/
+*conda*/
+HEC-FIN/
+
+# Conda/Mamba installers
+Mambaforge*.sh
+*forge*.sh
+
+# Dataset files (can be downloaded separately)
+MILS/data/coco/annotations/
+MILS/data/coco/val2014/
+MILS/data/coco/annotations_trainval2014.zip
+*.7z
+MSRVTT/
+MSRVTT.zip
+clotho_audio_evaluation.7z
+clotho_captions_evaluation.csv
+
+# Model checkpoints
+ViClip-InternVid-10M-FLT.pth
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# VS Code settings
+.vscode/
+
+# PyCharm settings
+.idea/
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs and databases
+*.log
+*.sqlite
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Model checkpoints and large binary files
+*.pth
+*.h5
+*.pkl
+*.bin
+*.onnx
+*.pt
+*.model
+
+# Output directories
+output/
+results/
+checkpoints/
+runs/ 

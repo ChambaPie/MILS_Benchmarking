@@ -1,0 +1,27 @@
+name: MILS
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python >= 3.8
+  - pytorch
+  - torchvision
+  - ffmpeg
+  - opencv
+  - cmake
+  - pkg-config
+  - sentencepiece
+  - pip:
+    - "numpy<2.0"
+    - pandas
+    - matplotlib
+    - timm
+    - diffusers
+    - accelerate
+    - transformers
+    - torchaudio
+    - open_clip_torch
+    - git+https://github.com/facebookresearch/pytorchvideo
+    - einops
+    - protobuf
