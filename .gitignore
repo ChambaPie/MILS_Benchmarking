@@ -14,7 +14,13 @@ Mambaforge*.sh
 # Dataset files (can be downloaded separately)
 MILS/data/coco/annotations/
 MILS/data/coco/val2014/
+MILS/data/coco/test/split
+MILS/data/coco/test/split_*
 MILS/data/coco/annotations_trainval2014.zip
+karpathy_split.zip
+dataset_coco.json
+val2014.zip
+val2014/
 *.7z
 MSRVTT/
 MSRVTT.zip
@@ -84,4 +90,7 @@ wheels/
 output/
 results/
 checkpoints/
-runs/ 
+runs/
+
+# Custom files (DO NOT COMMIT)
+# caption_single_image.py is tracked because it's a useful tool 

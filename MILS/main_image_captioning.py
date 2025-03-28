@@ -28,9 +28,6 @@ from optimization_utils import (
 
 from paths import IMAGEC_COCO_ANNOTATIONS, IMAGEC_COCO_IMAGES, IMAGEC_COCO_SPLITS, OUTPUT_DIR
 
-# Force CPU usage
-torch.cuda.is_available = lambda: False
-device = torch.device('cpu')
 
 def optimize_for_images(
     args, text_pipeline, image_ids, text_prompt, clip_model, tokenizer, preprocess
@@ -51,17 +48,35 @@ def optimize_for_images(
         keep_previous=args.keep_previous,
         prompt=text_prompt,
         key=lambda x: -x[0],
+        batch_size=args.batch_size,
+        device=args.device,
+        exploration=args.exploration,
+    )
+    image_paths = [f"MILS/data/coco/val2014/{i}" for i in image_ids]
+    target_features = (
+        get_image_features(
+            clip_model,
+            image_paths,
+            preprocess,
+            args.batch_size,
+            args.device
+        )
+        .detach()
+        .cpu()
+        .numpy()
     )
 
     def clip_scorer(sentences, target_feature):
-        return S.clip_scorer(
-            sentences,
-            target_feature,
+        text_features = get_text_features(
             clip_model,
             tokenizer,
-            preprocess,
+            sentences,
             args.device,
+            args.batch_size,
+            amp=True,
+            use_format=False,
         )
+        return text_features.detach().cpu().numpy() @ target_feature
 
     scorers = {}
     for i, image_id in enumerate(image_ids):
@@ -116,52 +131,95 @@ def optimize_for_images(
 
 
 def main(args):
-    # Load annotations
-    with open(args.annotations_path, "r") as f:
-        annotations = json.load(f)
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
     
-    # Get image IDs and limit to max_images
-    image_ids = [ann["image_id"] for ann in annotations["annotations"]]
-    image_ids = list(set(image_ids))[:args.max_images]  # Limit to max_images unique images
+    # Set device for Apple Silicon
+    if torch.backends.mps.is_available():
+        args.device = "mps"
+    elif torch.cuda.is_available():
+        args.device = "cuda:0"
+    else:
+        args.device = "cpu"
+    print(f"Using device: {args.device}")
     
-    # Load CLIP model
+    with open(args.prompt, "r") as w:
+        text_prompt = w.read()
+    with open(args.annotations_path, "r") as w:
+        annotations = json.load(w)["annotations"]
+
     clip_model, _, preprocess = create_model_and_transforms(
         args.clip_model, pretrained=args.pretrained
     )
-    clip_model.to(device)
-    
-    # Load tokenizer
     tokenizer = get_tokenizer(args.clip_model)
-    
-    # Load text pipeline
+    clip_model.to(args.device)
+    clip_model.eval()
     text_pipeline = transformers.pipeline(
         "text-generation",
         model=args.text_model,
-        device=-1,  # Force CPU
         model_kwargs={"torch_dtype": torch.float32},
+        device_map="cpu"  # Use CPU for the large language model
     )
-    
-    # Load prompt
-    with open(args.prompt, "r") as f:
-        text_prompt = f.read()
-    
-    # Run optimization
-    optimize_for_images(
-        args, text_pipeline, image_ids, text_prompt, clip_model, tokenizer, preprocess
-    )
+    if 'Ministral' in args.text_model:
+        text_pipeline.tokenizer.pad_token_id = text_pipeline.model.config.eos_token_id
+    image_ids = sorted(set(int(a["image_id"]) for a in annotations))
+    # Choose karpathy test set splits
+    with open(IMAGEC_COCO_SPLITS, "r") as w:
+        karpathy_split = json.load(w)
+    image_ids = [i["filename"] for i in karpathy_split["images"] if i["split"] == "test"]
+    # Sample 1000 if ablation
+    if args.ablation:
+        random.seed(args.seed)
+        image_ids = random.sample(image_ids, 1000)
+    image_ids = [x for x in image_ids if not os.path.exists(os.path.join(args.output_dir, f"{x}"))]
+    print(f"Length of the data is {len(image_ids)}")
+
+    image_ids = image_ids[args.process :: args.num_processes]
+    while len(image_ids):
+        current_batch = []
+        while len(current_batch) < args.llm_batch_size and image_ids:
+            image_id = image_ids[0]
+            if (
+                not os.path.exists(os.path.join(args.output_dir, f"{image_id}"))
+                and image_id not in current_batch
+            ):
+                current_batch.append(image_id)
+            image_ids = image_ids[1:]
+        if current_batch:
+            optimize_for_images(
+                args,
+                text_pipeline,
+                current_batch,
+                text_prompt,
+                clip_model,
+                tokenizer,
+                preprocess,
+            )
 
 
 def get_args_parser():
-    parser = argparse.ArgumentParser("MILS Image Captioning", add_help=False)
-    parser.add_argument("--output_dir", default=OUTPUT_DIR, type=str)
-    parser.add_argument("--images_path", default=IMAGEC_COCO_IMAGES, type=str)
-    parser.add_argument("--annotations_path", default=IMAGEC_COCO_ANNOTATIONS, type=str)
-    parser.add_argument("--splits_path", default=IMAGEC_COCO_SPLITS, type=str)
-    parser.add_argument("--device", default="cpu", type=str)
+    parser = argparse.ArgumentParser("Image Captioning with COCO", add_help=False)
+
+    # Model parameters
+    parser.add_argument("--seed", default=2024, type=int)
+    parser.add_argument("--device", default="cuda:0", help="device to use for testing")
+    parser.add_argument(
+        "--annotations_path",
+        default=IMAGEC_COCO_ANNOTATIONS,
+    )
+    parser.add_argument(
+        "--images_path", default=IMAGEC_COCO_IMAGES
+    )
+    parser.add_argument(
+        "--output_dir",
+        default=OUTPUT_DIR,
+        help="Output Path",
+    )
     parser.add_argument("--num_processes", default=1, type=int)
     parser.add_argument("--process", default=0, type=int)
-    parser.add_argument("--max_images", default=5, type=int, help="Maximum number of images to process")
-    parser.add_argument("--batch_size", default=1, type=int, help="Batch size")
+    
+
+    parser.add_argument("--batch_size", default=32, type=int, help="Batch size")
     parser.add_argument(
         "--llm_batch_size", default=16, type=int, help="Batch size for llms"
     )

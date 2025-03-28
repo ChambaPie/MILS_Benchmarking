@@ -66,6 +66,23 @@ unzip val2014.zip
 unzip annotations_trainval2014.zip
 ```
 
+**Karpathy Split File**: For image captioning, you need the Karpathy split file that defines which images from COCO should be used for training, validation, and testing.
+
+Option 1 - Download from Stanford:
+```bash
+wget https://cs.stanford.edu/people/karpathy/deepimagesent/caption_datasets.zip
+unzip caption_datasets.zip
+# Extract the dataset_coco.json file and rename it to 'split'
+mkdir -p data/coco/test
+cp dataset_coco.json data/coco/test/split
+```
+
+Option 2 - Download directly from the neuraltalk2 repository:
+```bash
+mkdir -p data/coco/test
+wget https://raw.githubusercontent.com/karpathy/neuraltalk2/master/data/dataset_coco.json -O data/coco/test/split
+```
+
 **Clotho**: Download the clotho dataset from the official website [here](https://zenodo.org/records/3490684). We use the test split of this dataset for our benchmarking.
 
 ```bash
@@ -118,6 +135,15 @@ The captions are saved in `OUTPUT_DIR`. Specify this path in `ours_result_path` 
 python eval/image_captioning.py
 ```
 
+#### Captioning a single image
+
+For testing with a single image without requiring the Karpathy split, you can use the `caption_single_image.py` script:
+
+```bash
+python caption_single_image.py --image_path /path/to/your/image.jpg
+```
+
+This script uses the same models and optimization process but works with any image without needing dataset splits.
 
 ### Audio captioning
 
