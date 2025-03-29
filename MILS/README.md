@@ -135,6 +135,36 @@ The captions are saved in `OUTPUT_DIR`. Specify this path in `ours_result_path` 
 python eval/image_captioning.py
 ```
 
+#### Quick Testing with Limited Resources
+
+For quick testing with minimal resources, use:
+
+```bash
+python main_image_captioning.py --ablation --num_processes 1 --process 0 --batch_size 4 --keep_previous 5 --requested_number 5 --iterations 2 --max_images 1 --force_process
+```
+
+This will:
+- Process just 1 image (`--max_images 1`)
+- Run on CPU
+- Use a reduced number of iterations and candidates
+- Force processing even if output already exists (`--force_process`)
+
+#### Script Versions
+
+There are three main versions of the image captioning script:
+
+1. **main_image_captioning.py** - The modified version with Apple Silicon support that runs on CPU. This version includes the `--max_images` and `--force_process` flags for easier experimentation.
+
+2. **main_image_captioning_original_version.py** - The original unmodified script from the MILS repository, which assumes CUDA availability.
+
+3. **main_image_captioning_gpu.py** - An enhanced version that automatically detects and uses the best available device (MPS for Apple Silicon, CUDA for NVIDIA GPUs, or CPU as fallback). This version also includes the extra flags for convenience.
+
+For GPU acceleration with a small model:
+
+```bash
+python main_image_captioning_gpu.py --ablation --num_processes 1 --process 0 --batch_size 4 --keep_previous 5 --requested_number 5 --iterations 2 --text_model facebook/opt-125m --clip_model RN50 --pretrained openai --max_images 10 --force_process
+```
+
 #### Captioning a single image
 
 For testing with a single image without requiring the Karpathy split, you can use the `caption_single_image.py` script:

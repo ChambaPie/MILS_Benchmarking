@@ -52,17 +52,17 @@ def optimize_for_images(
         device=args.device,
         exploration=args.exploration,
     )
-    # The image_ids are already full filenames like "COCO_val2014_000000181249.jpg"
-    # Just join them with the images_path directly
-    image_paths = [os.path.join(args.images_path, image_id) for image_id in image_ids]
-    
+    image_paths = [
+        os.path.join(args.images_path, f"COCO_val2014_{image_id:012}.jpg")
+        for image_id in image_ids
+    ]
     target_features = (
         get_image_features(
             clip_model,
             preprocess,
             image_paths,
             args.device,
-            args.batch_size
+            args.batch_size,
         )
         .detach()
         .cpu()
@@ -160,17 +160,16 @@ def main(args):
     text_pipeline = transformers.pipeline(
         "text-generation",
         model=args.text_model,
-        model_kwargs={"torch_dtype": torch.float32},
-        device_map="cpu"  # Use CPU for the large language model
+        model_kwargs={"torch_dtype": torch.bfloat16},
+        device_map=args.device,
     )
     if 'Ministral' in args.text_model:
         text_pipeline.tokenizer.pad_token_id = text_pipeline.model.config.eos_token_id
     image_ids = sorted(set(int(a["image_id"]) for a in annotations))
     # Choose karpathy test set splits
-    with open(IMAGEC_COCO_SPLITS, "r") as w:
-        karpathy_split = json.load(w)
-    # Get the filenames directly from the split - these are already in the format "COCO_val2014_000000xxx.jpg"
-    image_ids = [i["filename"] for i in karpathy_split["images"] if i["split"] == "test"]
+    with open(IMAGEC_COCO_SPLITS) as f:
+        karpathy_split = json.load(f)['images']
+    image_ids = [int(x['filename'].split('CO_val2014_')[-1].split('.jpg')[0]) for x in karpathy_split if x['split'] == 'test']
     # Sample 1000 if ablation
     if args.ablation:
         random.seed(args.seed)
@@ -180,7 +179,7 @@ def main(args):
     if args.max_images is not None:
         print(f"Limiting to {args.max_images} images")
         image_ids = image_ids[:args.max_images]
-
+    
     # Only filter out existing directories if force_process is not set
     if not args.force_process:
         image_ids = [x for x in image_ids if not os.path.exists(os.path.join(args.output_dir, f"{x}"))]
@@ -192,7 +191,7 @@ def main(args):
         while len(current_batch) < args.llm_batch_size and image_ids:
             image_id = image_ids[0]
             if (
-                not os.path.exists(os.path.join(args.output_dir, f"{image_id}"))
+                (not os.path.exists(os.path.join(args.output_dir, f"{image_id}")) or args.force_process)
                 and image_id not in current_batch
             ):
                 current_batch.append(image_id)
@@ -294,4 +293,4 @@ if __name__ == "__main__":
     )
     print(args.output_dir)
     os.makedirs(args.output_dir, exist_ok=True)
-    main(args)
+    main(args) 
