@@ -9,8 +9,9 @@ OUTPUT_DIR = 'output/coco_captions'
 
 # Image captioning
 IMAGEC_COCO_ANNOTATIONS = 'data/coco/annotations/captions_val2014.json'
-IMAGEC_COCO_IMAGES = 'data/coco/val2014'
-IMAGEC_COCO_SPLITS = 'data/coco/test/split' # TODO: add some reference here
+# IMAGEC_COCO_IMAGES = 'data/coco/val2014'
+IMAGEC_COCO_IMAGES = '../val2014'
+IMAGEC_COCO_SPLITS = 'data/coco/test/split_all.json' # TODO: add some reference here
 
 # Video captioning
 VIDEOC_MSRVTT_ANNOTATIONS = '/path/to/msrvtt/test_videodatainfo.json'

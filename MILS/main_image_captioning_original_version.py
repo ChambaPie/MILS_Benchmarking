@@ -52,17 +52,17 @@ def optimize_for_images(
         device=args.device,
         exploration=args.exploration,
     )
-    # The image_ids are already full filenames like "COCO_val2014_000000181249.jpg"
-    # Just join them with the images_path directly
-    image_paths = [os.path.join(args.images_path, image_id) for image_id in image_ids]
-    
+    image_paths = [
+        os.path.join(args.images_path, f"COCO_val2014_{image_id:012}.jpg")
+        for image_id in image_ids
+    ]
     target_features = (
         get_image_features(
             clip_model,
             preprocess,
             image_paths,
             args.device,
-            args.batch_size
+            args.batch_size,
         )
         .detach()
         .cpu()
@@ -136,16 +136,6 @@ def optimize_for_images(
 def main(args):
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
-    
-    # Set device for Apple Silicon
-    if torch.backends.mps.is_available():
-        args.device = "mps"
-    elif torch.cuda.is_available():
-        args.device = "cuda:0"
-    else:
-        args.device = "cpu"
-    print(f"Using device: {args.device}")
-    
     with open(args.prompt, "r") as w:
         text_prompt = w.read()
     with open(args.annotations_path, "r") as w:
@@ -160,23 +150,23 @@ def main(args):
     text_pipeline = transformers.pipeline(
         "text-generation",
         model=args.text_model,
-        model_kwargs={"torch_dtype": torch.float32},
-        device_map="cpu"  # Use CPU for the large language model
+        model_kwargs={"torch_dtype": torch.bfloat16},
+        device_map=args.device,
     )
     if 'Ministral' in args.text_model:
         text_pipeline.tokenizer.pad_token_id = text_pipeline.model.config.eos_token_id
     image_ids = sorted(set(int(a["image_id"]) for a in annotations))
     # Choose karpathy test set splits
-    with open(IMAGEC_COCO_SPLITS, "r") as w:
-        karpathy_split = json.load(w)
-    # Get the filenames directly from the split - these are already in the format "COCO_val2014_000000xxx.jpg"
-    image_ids = [i["filename"] for i in karpathy_split["images"] if i["split"] == "test"]
+    with open(IMAGEC_COCO_SPLITS) as f:
+        karpathy_split = json.load(f)['images']
+    image_ids = [int(x['filename'].split('CO_val2014_')[-1].split('.jpg')[0]) for x in karpathy_split if x['split'] == 'test']
     # Sample 1000 if ablation
     if args.ablation:
         random.seed(args.seed)
         image_ids = random.sample(image_ids, 1000)
     image_ids = [x for x in image_ids if not os.path.exists(os.path.join(args.output_dir, f"{x}"))]
     print(f"Length of the data is {len(image_ids)}")
+
 
     image_ids = image_ids[args.process :: args.num_processes]
     while len(image_ids):
