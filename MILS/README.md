@@ -252,6 +252,47 @@ We first use image captioning to convert image to text. Also, we use audio capti
 
 Please open an issue in this repository (preferred for better visibility) or reach out to [kumar.ashutosh@utexas.edu](mailto:kumar.ashutosh@utexas.edu).
 
+## Additional Evaluation Tools
+
+### Enhanced Image Captioning Evaluation
+
+The updated `eval_utils/image_captioning.py` script now includes the following improvements:
+- Automatically saves evaluation scores to a JSON file (`evaluation_results.json`) in the output directory
+- Eliminates Java dependency by implementing all metrics (BLEU, METEOR, ROUGE-L, CIDEr) in pure Python
+- Handles numeric image IDs seamlessly for compatibility with the COCO dataset
+- Provides more detailed output and reporting of evaluation statistics
+
+To use:
+```bash
+python eval_utils/image_captioning.py
+```
+
+### SPICE Metric Evaluation
+
+A new standalone SPICE evaluator (`eval_utils/spice_only.py`) has been added that:
+- Calculates approximate SPICE scores without requiring Java dependencies
+- Uses NLTK for linguistic analysis and semantic proposition extraction
+- Can be run independently to evaluate just the SPICE metric for image captions
+- Saves results to a JSON file for easy reference
+
+To use:
+```bash
+python eval_utils/spice_only.py output/coco_captions/gpt4v_captions
+```
+
+### GPT-4V Captioning
+
+For users who want to test GPT-4V's captioning capabilities, a script is available:
+```bash
+python gpt4v_image_captioning.py --api_key "your-openai-api-key" --max_images 5
+```
+
+The script will:
+- Process images from the test split
+- Generate captions using the OpenAI GPT-4V API
+- Save outputs in the same format as other captioning methods
+- Can be evaluated using the standard evaluation scripts
+
 ## Contributing
 
 See the [CONTRIBUTING](CONTRIBUTING.md) file for how to help out.

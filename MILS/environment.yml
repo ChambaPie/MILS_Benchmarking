@@ -25,3 +25,5 @@ dependencies:
     - git+https://github.com/facebookresearch/pytorchvideo
     - einops
     - protobuf
+    - pycocoevalcap
+    - pycocotools
