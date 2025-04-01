@@ -79,7 +79,7 @@ coco_eval.params['image_id'] = coco_result.getImgIds()
 
 # evaluate results
 # SPICE will take a few minutes the first time, but speeds up due to caching
-coco_eval.evaluate()
+# coco_eval.evaluate()
 
 # print output evaluation scores
 for metric, score in coco_eval.eval.items():

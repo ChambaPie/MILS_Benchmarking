@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # All rights reserved.
 #
@@ -98,8 +99,8 @@ def main():
     matches = [id for id in our_image_ids if id in coco_image_ids]
     
     print(f"\nImage ID matching:")
-    print(f"Our image IDs: {our_image_ids}")
-    print(f"Matching IDs in COCO: {matches}")
+    print(f"Our image IDs: {len(our_image_ids)} image IDs")
+    print(f"Matching IDs in COCO: {len(matches)} matches")
     
     if not matches:
         print("\nWARNING: None of our image IDs match the COCO dataset IDs!")
@@ -113,89 +114,70 @@ def main():
         temp_file.flush()
         result_file_path = temp_file.name
     
-    # Initialize scores dictionary
-    scores = {}
-    
     # Load model results into COCO format
     coco_result = coco.loadRes(result_file_path)
-    eval_img_ids = coco_result.getImgIds()
     
-    # ===== DIRECT METRIC CALCULATION =====
-    # This bypasses the problematic Java dependency entirely
-    print("\nCalculating evaluation metrics directly...")
+    # Create COCOEvalCap object
+    print("\nCreating evaluation object...")
+    coco_eval = COCOEvalCap(coco, coco_result)
     
-    # Format data for metric calculations
-    gts = {}
-    res = {}
+    # Evaluate on all image IDs
+    coco_eval.params['image_id'] = coco_result.getImgIds()
     
-    # Get all ground truth captions
-    for img_id in eval_img_ids:
-        ann_ids = coco.getAnnIds(imgIds=img_id)
-        if not ann_ids:
-            print(f"Warning: No reference captions found for image {img_id}")
-            continue
-        
-        anns = coco.loadAnns(ann_ids)
-        # Store just the caption strings, not dictionaries
-        gts[img_id] = [ann['caption'] for ann in anns]
-    
-    # Format our captions the same way - just strings, not dictionaries
-    for item in result_data:
-        res[item['image_id']] = [item['caption']]
-    
-    # Calculate BLEU score
+    # NOTE: SPICE needs Java to work properly
+    print(f"Checking Java for SPICE evaluation...")
     try:
-        from pycocoevalcap.bleu.bleu import Bleu
-        print("Computing BLEU scores...")
-        bleu_scorer = Bleu(n=4)
-        bleu_scores, _ = bleu_scorer.compute_score(gts, res)
-        for i, score in enumerate(bleu_scores):
-            scores[f'Bleu_{i+1}'] = score
+        java_version = subprocess.check_output(['java', '-version'], stderr=subprocess.STDOUT)
+        print(f"Java found: {java_version.decode('utf-8', errors='ignore')}")
     except Exception as e:
-        print(f"Error calculating BLEU: {e}")
+        print(f"Warning: Java not found or error checking Java version: {e}")
+        print("SPICE evaluation may fail without Java installed properly.")
     
-    # Calculate METEOR score
+    # Evaluate results (including SPICE)
+    print("\nEvaluating captions with all metrics (including SPICE)...")
+    print("Note: SPICE can take a few minutes on first run but will be faster on subsequent runs due to caching.")
+    
     try:
-        from pycocoevalcap.meteor.meteor import Meteor
-        print("Computing METEOR score...")
-        meteor_scorer = Meteor()
-        meteor_score, _ = meteor_scorer.compute_score(gts, res)
-        scores['METEOR'] = meteor_score
+        coco_eval.evaluate()
     except Exception as e:
-        print(f"Error calculating METEOR: {e}")
+        print(f"Error during evaluation: {e}")
+        print("Continuing with available metrics...")
     
-    # Calculate ROUGE-L score
-    try:
-        from pycocoevalcap.rouge.rouge import Rouge
-        print("Computing ROUGE-L score...")
-        rouge_scorer = Rouge()
-        rouge_score, _ = rouge_scorer.compute_score(gts, res)
-        scores['ROUGE_L'] = rouge_score
-    except Exception as e:
-        print(f"Error calculating ROUGE-L: {e}")
+    # Extract results to a dictionary
+    eval_results = {}
+    for metric, score in coco_eval.eval.items():
+        try:
+            eval_results[metric] = float(score)
+        except (ValueError, TypeError) as e:
+            print(f"Error converting {metric} score to float: {e}")
+            print(f"Raw {metric} value: {score}")
+            # Try to extract numeric values if it's a string
+            if isinstance(score, (str, bytes)):
+                try:
+                    if isinstance(score, bytes):
+                        score_str = score.decode('utf-8')
+                    else:
+                        score_str = score
+                    
+                    # Try to get the first number
+                    import re
+                    numbers = re.findall(r"[-+]?\d*\.\d+|\d+", score_str)
+                    if numbers:
+                        eval_results[metric] = float(numbers[0])
+                        print(f"Extracted {metric} value: {eval_results[metric]}")
+                except Exception as extract_err:
+                    print(f"Failed to extract numeric value for {metric}: {extract_err}")
     
-    # Calculate CIDEr score
-    try:
-        from pycocoevalcap.cider.cider import Cider
-        print("Computing CIDEr score...")
-        cider_scorer = Cider()
-        cider_score, _ = cider_scorer.compute_score(gts, res)
-        scores['CIDEr'] = cider_score
-    except Exception as e:
-        print(f"Error calculating CIDEr: {e}")
-    
-    # Print final scores and save to file
+    # Print output evaluation scores
     print("\nEvaluation Results:")
-    results = {}
-    for metric, score in sorted(scores.items()):
-        results[metric] = float(score)
-        print(f"{metric}: {score:.6f}")
+    for metric, score in sorted(eval_results.items()):
+        print(f'{metric}: {score:.6f}')
     
     # Save results to a file
     output_dir = os.path.dirname(result_dir) if os.path.isdir(result_dir) else result_dir
     results_file = os.path.join(output_dir, "evaluation_results.json")
     with open(results_file, "w") as f:
-        json.dump(results, f, indent=2)
+        json.dump(eval_results, f, indent=2)
     print(f"\nEvaluation results saved to {results_file}")
     
     # Clean up
