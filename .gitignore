@@ -12,14 +12,21 @@ Mambaforge*.sh
 *forge*.sh
 
 # Dataset files (can be downloaded separately)
-MILS/data/coco/annotations/
-MILS/data/coco/val2014/
-MILS/data/coco/test/split
-MILS/data/coco/test/split_*
+MILS/data/
+data/
+data/coco/
+data/coco/annotations/
+data/coco/val2014/
+data/coco/test/
+data/coco/test/split
+data/coco/test/split_*
+data/coco/val2014_split/
+data/coco/val2014_50/
 MILS/data/coco/annotations_trainval2014.zip
 karpathy_split.zip
 dataset_coco.json
 val2014.zip
+extract_val_split.py
 val2014/
 *.7z
 MSRVTT/
@@ -88,9 +95,46 @@ wheels/
 
 # Output directories
 output/
+test_output/
 results/
 checkpoints/
 runs/
+full_output_val_1/
+val2014_split/
+val2014_50/
 
 # Custom files (DO NOT COMMIT)
 # caption_single_image.py is tracked because it's a useful tool 
+
+# New additions
+# Test and utility scripts
+image_captioning_modal_optimized.py
+modal_download_test.py
+split_val_json.py
+test_image_captioning_gpu.py
+test_image_captioning.py
+spice_only.py
+
+# Image and JSON files
+*.jpeg
+*.jpg
+*.png
+*.gif
+*.json
+*.jsonl
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*~
+
+# Cache directories
+.cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local configuration
+local_settings.py
+*.local 
