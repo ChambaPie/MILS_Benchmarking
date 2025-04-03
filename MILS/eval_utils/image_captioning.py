@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # All rights reserved.
 #
@@ -117,67 +116,34 @@ def main():
     # Load model results into COCO format
     coco_result = coco.loadRes(result_file_path)
     
-    # Create COCOEvalCap object
-    print("\nCreating evaluation object...")
+    # Create coco_eval object 
     coco_eval = COCOEvalCap(coco, coco_result)
     
-    # Evaluate on all image IDs
+    # Set image IDs to evaluate
     coco_eval.params['image_id'] = coco_result.getImgIds()
     
-    # NOTE: SPICE needs Java to work properly
-    print(f"Checking Java for SPICE evaluation...")
-    try:
-        java_version = subprocess.check_output(['java', '-version'], stderr=subprocess.STDOUT)
-        print(f"Java found: {java_version.decode('utf-8', errors='ignore')}")
-    except Exception as e:
-        print(f"Warning: Java not found or error checking Java version: {e}")
-        print("SPICE evaluation may fail without Java installed properly.")
-    
-    # Evaluate results (including SPICE)
-    print("\nEvaluating captions with all metrics (including SPICE)...")
-    print("Note: SPICE can take a few minutes on first run but will be faster on subsequent runs due to caching.")
-    
+    # Evaluate results
+    print("\nEvaluating captions...")
     try:
         coco_eval.evaluate()
-    except Exception as e:
-        print(f"Error during evaluation: {e}")
-        print("Continuing with available metrics...")
+    except subprocess.CalledProcessError as e:
+        print("\nWarning: SPICE evaluation failed due to Java compatibility issues. Other metrics will still be saved.")
     
-    # Extract results to a dictionary
-    eval_results = {}
-    for metric, score in coco_eval.eval.items():
-        try:
-            eval_results[metric] = float(score)
-        except (ValueError, TypeError) as e:
-            print(f"Error converting {metric} score to float: {e}")
-            print(f"Raw {metric} value: {score}")
-            # Try to extract numeric values if it's a string
-            if isinstance(score, (str, bytes)):
-                try:
-                    if isinstance(score, bytes):
-                        score_str = score.decode('utf-8')
-                    else:
-                        score_str = score
-                    
-                    # Try to get the first number
-                    import re
-                    numbers = re.findall(r"[-+]?\d*\.\d+|\d+", score_str)
-                    if numbers:
-                        eval_results[metric] = float(numbers[0])
-                        print(f"Extracted {metric} value: {eval_results[metric]}")
-                except Exception as extract_err:
-                    print(f"Failed to extract numeric value for {metric}: {extract_err}")
-    
-    # Print output evaluation scores
+    # Print output evaluation scores and save to dictionary
     print("\nEvaluation Results:")
-    for metric, score in sorted(eval_results.items()):
+    results = {}
+    for metric, score in coco_eval.eval.items():
+        # Skip SPICE if it failed
+        if metric == 'SPICE' and isinstance(score, str) and 'error' in score.lower():
+            continue
+        results[metric] = float(score)
         print(f'{metric}: {score:.6f}')
     
     # Save results to a file
     output_dir = os.path.dirname(result_dir) if os.path.isdir(result_dir) else result_dir
     results_file = os.path.join(output_dir, "evaluation_results.json")
     with open(results_file, "w") as f:
-        json.dump(eval_results, f, indent=2)
+        json.dump(results, f, indent=2)
     print(f"\nEvaluation results saved to {results_file}")
     
     # Clean up

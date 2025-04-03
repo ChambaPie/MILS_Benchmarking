@@ -95,7 +95,7 @@ def process_images(args):
     # Get test images and their IDs
     test_images = []
     for img in split_data:
-        if img['split'] == 'test':
+        if img['split'] == 'val':
             # CRITICAL: Use cocoid (NOT imgid) for the directory name
             # This is what the evaluation script is looking for
             test_images.append({
@@ -163,7 +163,7 @@ def main():
     parser.add_argument("--split_path", type=str, default=IMAGEC_COCO_SPLITS, help="Path to Karpathy split JSON")
     parser.add_argument("--output_dir", type=str, default=os.path.join(OUTPUT_DIR, "gpt4v_captions"), 
                         help="Directory to save output")
-    parser.add_argument("--max_images", type=int, default=50, help="Maximum number of images to process")
+    parser.add_argument("--max_images", type=int, default=100, help="Maximum number of images to process")
     parser.add_argument("--prompt", type=str, default="Describe this image concisely in one sentence.", 
                         help="Prompt to send to GPT-4V")
     parser.add_argument("--rate_limit", type=float, default=2.0, 
