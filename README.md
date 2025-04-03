@@ -1,33 +1,61 @@
-# Benchmarking MILS
- ### The point of this excercise is to compare MILS to other benchmark applications (GPT-4V and BLIP-2)
+# MILS Benchmarking: Image Captioning Comparison
 
-#### We will conduct 3 Experiments:
+This repository contains code for benchmarking MILS against GPT-4V and BLIP-2 for image captioning tasks.
 
-1. **Image Captioning** \
-**Prompt:** "Describe this image in detail." \
-**Evaluation Metrics:** BLEU, METEOR, CIDEr, SPICE \
-**Human Evaluation:** Fluency + relevance (1–5 scale)
+## Experiment: Image Captioning
 
-    **Dataset:** 1K images from COCO Val2014
+### Setup
+1. **Dataset**: 1K images from COCO Val2014
+2. **Prompt**: "Describe this image in detail."
+3. **Evaluation Metrics**: BLEU, METEOR, CIDEr
 
-2. **Visual Question Answering (VQA)** \
-**Prompt:** Natural language questions (e.g., “What is the boy doing?”) \
-**Evaluation Metrics:** Exact match with ground truth answers \
-**Additional:** Optional visual reasoning questions
+### Tools Used
+- 🧠 MILS (access from Meta repo or API)
+- 🤖 BLIP-2: Salesforce GitHub
+- 📷 GPT-4V: OpenAI's gpt-4-vision-preview model
+- 📦 Hugging Face for dataset loading
+- 📊 Evaluation libraries: nlg-eval, pycocoevalcap
 
-    **Dataset:** VQAv2
+## Modal Setup and Usage
 
-3. **Referring Expressions** \
-**Prompt:** “Point to the red car” or “Highlight the person wearing a hat.” \
-**Output:** Either a bounding box or textual description of the region. \
-**Evaluation Metrics:** Intersection over Union (IoU), referring accuracy
+### Prerequisites
+1. Install Modal:
+```bash
+pip install modal
+```
 
-    **Dataset:** RefCOCO
+2. Set up Modal CLI:
+```bash
+modal token new
+```
 
-##### Tools:
+3. Set up environment variables:
+```bash
+export OPENAI_API_KEY="your_openai_api_key"
+export HUGGINGFACE_TOKEN="your_huggingface_token"
+```
 
-🧠 MILS (access from Meta repo or API) \
-🤖 BLIP-2: Salesforce GitHub \
-📷 GPT-4V: Use OpenAI’s gpt-4-vision-preview model (if available) \
-📦 Hugging Face for dataset loading: datasets, torchvision \
-📊 Evaluation libraries: nlg-eval, pycocoevalcap, scikit-image
+### Running the Modal Script
+
+1. The main script for running image captioning on Modal is `image_captioning_modal.py`
+
+2. To run the script:
+```bash
+python image_captioning_modal.py
+```
+
+3. The script will:
+   - Process images from the COCO dataset
+   - Generate captions using the specified model
+   - Save results to the output directory
+   - Create evaluation metrics
+
+### Output
+- Captions are saved in the `output/coco_captions` directory
+- Each image gets its own directory with a `log.txt` file containing the caption
+- Evaluation results are saved in `evaluation_results.json`
+
+### Notes
+- The script uses Modal's A100 GPU for processing
+- Rate limiting is implemented to avoid API limits
+- Results are persisted using Modal volumes
