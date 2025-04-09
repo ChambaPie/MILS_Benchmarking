@@ -35,25 +35,47 @@ export OPENAI_API_KEY="your_openai_api_key"
 export HUGGINGFACE_TOKEN="your_huggingface_token"
 ```
 
-### Running the Modal Script
+### Running Image Captioning on Modal (Two Options)
 
-1. The main script for running image captioning on Modal is `image_captioning_modal.py`
+#### Option 1: Using the Original Script Directly
+This approach runs the original MILS image captioning script directly on Modal without modifications.
 
-2. To run the script:
+1. Run the execution script:
 ```bash
-python image_captioning_modal.py
+python image_captioning_modal_execute.py
 ```
 
-3. The script will:
-   - Process images from the COCO dataset
-   - Generate captions using the specified model
-   - Save results to the output directory
-   - Create evaluation metrics
+2. The script will:
+   - Create a Modal container with all required dependencies
+   - Execute the original MILS/main_image_captioning_original_version.py script
+   - Save results to the Modal volume
+   - Download results to your local machine
+
+#### Option 2: Using the Optimized Version
+This approach uses a rewritten, optimized version of the image captioning script.
+
+1. Run the optimized script:
+```bash
+python image_captioning_modal_optimized.py
+```
+
+2. The script will:
+   - Create a Modal container with all required dependencies
+   - Run the optimized image captioning code
+   - Save results to the Modal volume
+   - Download results to your local machine
 
 ### Output
-- Captions are saved in the `output/coco_captions` directory
+- Captions are saved in the `MILS/output/coco_captions/full_output_val_1` directory
 - Each image gets its own directory with a `log.txt` file containing the caption
-- Evaluation results are saved in `evaluation_results.json`
+- The log.txt file contains scores and the caption for each iteration
+- The final caption is found on the last line of the log.txt file
+
+### Evaluation
+After generating captions, evaluate them using:
+```bash
+python MILS/eval_utils/image_captioning.py MILS/output/coco_captions/full_output_val_1
+```
 
 ### Notes
 - The script uses Modal's A100 GPU for processing

@@ -4,13 +4,13 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-# Output dir
-OUTPUT_DIR = 'output/coco_captions'
+# Output dir - will be created if it doesn't exist
+OUTPUT_DIR = '/root/MILS/output/coco_captions/'
 
-# Image captioning
-IMAGEC_COCO_ANNOTATIONS = 'data/coco/annotations/captions_val2014.json'
-IMAGEC_COCO_IMAGES = 'data/coco/val2014_split/val2014_50'
-IMAGEC_COCO_SPLITS = 'data/coco/test/split_val_partitions/split_val_50.json' # TODO: add some reference here
+# Image captioning paths for Modal execution
+IMAGEC_COCO_ANNOTATIONS = '/root/MILS/data/coco/annotations/captions_val2014.json'
+IMAGEC_COCO_IMAGES = '/root/MILS/data/coco/val2014'
+IMAGEC_COCO_SPLITS = '/root/MILS/data/coco/test/split.json'
 
 # Video captioning
 VIDEOC_MSRVTT_ANNOTATIONS = '/path/to/msrvtt/test_videodatainfo.json'
@@ -22,4 +22,4 @@ AUDIOC_CLOTHO_FILES = '/path/to/Clotho2/wav/'
 
 # Image generation
 
-# Style transfer
+# Style transfer 

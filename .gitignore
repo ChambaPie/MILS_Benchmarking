@@ -137,4 +137,8 @@ htmlcov/
 
 # Local configuration
 local_settings.py
-*.local 
+*.local
+
+# New pattern to ignore imagec_g_Meta-Llama files
+imagec_g_Meta-Llama* 
+imagec_g_Meta-Llama-3.1-8B-Instruct_10_0.0_50_50_ViT-SO400M-14-SigLIP_webli_image_captioning_shorter_all/
