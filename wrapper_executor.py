@@ -5,7 +5,7 @@ import subprocess
 
 from MILS.modal.paths_modal import OUTPUT_DIR, IMAGEC_COCO_ANNOTATIONS, IMAGEC_COCO_IMAGES, IMAGEC_COCO_SPLITS
 
-sub = "MILS_7" # Edit this manually for each run (MILS_1, MILS_2, etc.)
+sub = "MILS_5" # Edit this manually for each run (MILS_1, MILS_2, etc.)
 
 # Set up Modal environment
 app = modal.App("mils-image-captioning-wrapper")
